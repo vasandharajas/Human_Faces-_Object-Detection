@@ -12,7 +12,17 @@ import cv2
 @st.cache_data
 def load_data():
     image_path = "C:/Users/anand/Desktop/Final Project1 Human Face Hugging/images/images"
-    faces_data = pd.read_csv("C:/Users/anand/Desktop/Final Project1 Human Face Hugging/faces.csv")
+    csv_path = "C:/Users/anand\Desktop/Final Project1 Human Face Hugging/faces.csv"
+    # Print the paths for debugging
+    print(f"Loading images from: {image_path}")
+    print(f"Loading CSV from: {csv_path}")
+    
+    try:
+        faces_data = pd.read_csv(csv_path)
+    except FileNotFoundError as e:
+        print(f"Error: {e}")
+        st.error(f"File not found: {csv_path}")
+        return pd.DataFrame()  # Return an empty DataFrame in case of error
 
     data = faces_data.copy()
     data["image_name"] = data["image_name"].apply(lambda x: os.path.join(image_path, x))
@@ -78,6 +88,10 @@ def main():
 
     data = load_data()
 
+    if data.empty:
+        st.warning("Data could not be loaded. Please check the file path.")
+        return
+
     if option == "Dataset":
         st.header("Dataset Used for Model Building")
         st.write(data.head())
@@ -139,5 +153,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-         
