@@ -1,5 +1,5 @@
 import os
-import tensorflow as tf
+import torch
 import streamlit as st
 import pandas as pd
 import numpy as np
@@ -7,10 +7,6 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from sklearn.metrics import mean_squared_error
 import cv2
-
-# Define the custom metric
-def custom_metric(y_true, y_pred):
-    return tf.keras.metrics.MeanSquaredError()(y_true, y_pred)
 
 # Load dataset
 @st.cache_data
@@ -28,21 +24,16 @@ def load_data():
     data["y1"] = data["y1"] / data["height"]
     return data
 
-# Load the model with custom objects
+# Load YOLOv5 model
 @st.cache_resource
-def load_model_with_custom_objects():
-    with tf.keras.utils.custom_object_scope({'custom_metric': custom_metric}):
-        return tf.keras.models.load_model("C:/Users/anand/Desktop/Final Project1 Human Face Hugging/my_model.keras")
+def load_yolov5_model():
+    return torch.hub.load('ultralytics/yolov5', 'yolov5s', pretrained=True)
 
 # Preprocessing function
-def preprocessing(file_path, label=None, pred=False):
+def preprocessing(file_path):
     img = cv2.imread(file_path)
-    height_img, width_img, _ = img.shape
-    img = cv2.resize(img, (224, 224))
-    img = img / 255.0
-    if pred:
-        return img, width_img, height_img
-    return img, label
+    img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+    return img
 
 # Predict and visualize multiple images
 def predict_and_visualize_multiple(img_paths, model):
@@ -50,30 +41,14 @@ def predict_and_visualize_multiple(img_paths, model):
     axes = axes.flatten()
     
     for i, img_path in enumerate(img_paths):
-        # Preprocess image
-        test_img, width, height = preprocessing(img_path, None, pred=True)
-        test_img = np.expand_dims(test_img, axis=0)
+        img = preprocessing(img_path)
         
         # Make prediction
-        pred = model.predict(test_img)
-        
-        # Open the image using OpenCV
-        imr = cv2.imread(img_path)
-        imr = cv2.cvtColor(imr, cv2.COLOR_BGR2RGB)
-        
-        # Back to original image dimensions
-        x0 = int(pred[0][0] * width)
-        y0 = int(pred[0][1] * height)
-        x1 = int(pred[0][2] * width)
-        y1 = int(pred[0][3] * height)
-        
-        # Draw rectangle on image
-        color = (255, 0, 0)  # Red color
-        thickness = 3
-        imr = cv2.rectangle(imr, (x0, y0), (x1, y1), color, thickness)
+        results = model(img)
+        results.render()  # updates results.imgs with boxes and labels
         
         # Display the image in a grid
-        axes[i].imshow(imr)
+        axes[i].imshow(results.imgs[0])
         axes[i].axis('off')
         axes[i].set_title(f'Image {i + 1}')
     
@@ -82,37 +57,21 @@ def predict_and_visualize_multiple(img_paths, model):
 
 # Predict and visualize a single image
 def predict_and_visualize_single(img_path, model):
-    # Preprocess image
-    img, width, height = preprocessing(img_path, pred=True)
-    img = np.expand_dims(img, axis=0)
+    img = preprocessing(img_path)
     
     # Make a prediction
-    pred = model.predict(img)
-    
-    # Open the image using OpenCV
-    imr = cv2.imread(img_path)
-    imr = cv2.cvtColor(imr, cv2.COLOR_BGR2RGB)
-    
-    # Back to original image dimensions
-    x0 = int(pred[0][0] * width)
-    y0 = int(pred[0][1] * height)
-    x1 = int(pred[0][2] * width)
-    y1 = int(pred[0][3] * height)
-    
-    # Draw a rectangle on the image
-    color = (255, 0, 0)  # Red color
-    thickness = 3
-    imr = cv2.rectangle(imr, (x0, y0), (x1, y1), color, thickness)
+    results = model(img)
+    results.render()  # updates results.imgs with boxes and labels
     
     # Display the image
-    st.image(imr, caption="Predicted Bounding Box", use_column_width=True)
+    st.image(results.imgs[0], caption="Predicted Bounding Box", use_column_width=True)
 
 # Load the model
-model = load_model_with_custom_objects()
+model = load_yolov5_model()
 
 # Streamlit UI
 def main():
-    st.title("Model Prediction And Image Dataset")
+    st.title("YOLOv5 Model Prediction And Image Dataset")
 
     st.sidebar.title("In This Project")
     option = st.sidebar.selectbox("Choose to display", ["Dataset", "Model Metrics", "Predictions"])
@@ -180,3 +139,5 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+         
