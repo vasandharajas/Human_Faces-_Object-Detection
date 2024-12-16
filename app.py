@@ -1,11 +1,11 @@
+import os
+import tensorflow as tf
 import streamlit as st
 import pandas as pd
 import numpy as np
-import tensorflow as tf
 import matplotlib.pyplot as plt
 import seaborn as sns
 from sklearn.metrics import mean_squared_error
-import os
 import cv2
 
 # Define the custom metric
@@ -32,7 +32,7 @@ def load_data():
 @st.cache_resource
 def load_model_with_custom_objects():
     with tf.keras.utils.custom_object_scope({'custom_metric': custom_metric}):
-        return tf.keras.models.load_model("my_model.keras")
+        return tf.keras.models.load_model("C:/Users/anand/Desktop/Final Project1 Human Face Hugging/my_model.keras")
 
 # Preprocessing function
 def preprocessing(file_path, label=None, pred=False):
@@ -180,4 +180,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
